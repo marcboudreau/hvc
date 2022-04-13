@@ -118,8 +118,8 @@ func TestNewCopyJob(t *testing.T) {
 
 func TestCopyJobExecute(t *testing.T) {
 	for _, testcase := range []struct {
-		copyJob     *CopyJob
-		errorAssert func(assert.TestingT, error, ...interface{}) bool
+		copyJob          *CopyJob
+		errorSliceAssert func(assert.TestingT, interface{}, ...interface{}) bool
 	}{
 		// Happy path!
 		{
@@ -165,7 +165,9 @@ func TestCopyJobExecute(t *testing.T) {
 										{
 											secret: &vault.Secret{
 												Data: map[string]interface{}{
-													"k1": "value",
+													"data": map[string]interface{}{
+														"k1": "value",
+													},
 												},
 											},
 											err: nil,
@@ -180,7 +182,7 @@ func TestCopyJobExecute(t *testing.T) {
 					},
 				},
 			},
-			errorAssert: assert.NoError,
+			errorSliceAssert: assert.Empty,
 		},
 		// Happy path no need to update
 		{
@@ -226,7 +228,9 @@ func TestCopyJobExecute(t *testing.T) {
 										{
 											secret: &vault.Secret{
 												Data: map[string]interface{}{
-													"k1": "value",
+													"data": map[string]interface{}{
+														"k1": "value",
+													},
 												},
 											},
 											err: nil,
@@ -241,7 +245,7 @@ func TestCopyJobExecute(t *testing.T) {
 					},
 				},
 			},
-			errorAssert: assert.NoError,
+			errorSliceAssert: assert.Empty,
 		},
 		// Error reading target updated_time
 		{
@@ -272,7 +276,7 @@ func TestCopyJobExecute(t *testing.T) {
 					},
 				},
 			},
-			errorAssert: assert.Error,
+			errorSliceAssert: assert.NotEmpty,
 		},
 		// Error reading source updated_time
 		{
@@ -314,7 +318,7 @@ func TestCopyJobExecute(t *testing.T) {
 					},
 				},
 			},
-			errorAssert: assert.Error,
+			errorSliceAssert: assert.NotEmpty,
 		},
 		// Error reading source value
 		{
@@ -365,7 +369,7 @@ func TestCopyJobExecute(t *testing.T) {
 					},
 				},
 			},
-			errorAssert: assert.Error,
+			errorSliceAssert: assert.NotEmpty,
 		},
 		// Error writing target secret
 		{
@@ -411,7 +415,9 @@ func TestCopyJobExecute(t *testing.T) {
 										{
 											secret: &vault.Secret{
 												Data: map[string]interface{}{
-													"k1": "value",
+													"data": map[string]interface{}{
+														"k1": "value",
+													},
 												},
 											},
 											err: nil,
@@ -426,9 +432,9 @@ func TestCopyJobExecute(t *testing.T) {
 					},
 				},
 			},
-			errorAssert: assert.Error,
+			errorSliceAssert: assert.NotEmpty,
 		},
 	} {
-		testcase.errorAssert(t, testcase.copyJob.Execute())
+		testcase.errorSliceAssert(t, testcase.copyJob.Execute())
 	}
 }

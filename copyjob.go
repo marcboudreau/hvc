@@ -2,6 +2,7 @@ package hvc
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/marcboudreau/hvc/spec"
 )
@@ -55,12 +56,26 @@ func NewCopyJob(spec *spec.CopyJob) (*CopyJob, error) {
 // ExecuteCopy copies the secret values referenced in the provided Copy
 // structure using the receiver's configured target and source Vault
 // connections.
-func (p *CopyJob) Execute() error {
+func (p *CopyJob) Execute() []error {
+	ch := make(chan error)
+
+	waitGroup := sync.WaitGroup{}
+
 	for i, copy := range p.Copies {
-		if err := copy.Execute(p.Target); err != nil {
-			return fmt.Errorf("failed to execute copy %d: %w", i+1, err)
+		waitGroup.Add(1)
+		go func(copy *Copy, i int, ch chan error) {
+			copy.Execute(p.Target, i, ch)
+			waitGroup.Done()
+		}(copy, i, ch)
+	}
+
+	errorSlice := []error{}
+	for range p.Copies {
+		err := <-ch
+		if err != nil {
+			errorSlice = append(errorSlice, err)
 		}
 	}
 
-	return nil
+	return errorSlice
 }
