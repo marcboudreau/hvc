@@ -64,3 +64,23 @@ func TestVaultName(t *testing.T) {
 // 	handleIntegrationTest(t)
 
 // }
+
+func TestNewVaultHandlesDefault(t *testing.T) {
+	for _, testcase := range []struct {
+		spec            *spec.Vault
+		expectedAddress string
+	}{
+		// Address omitted
+		{
+			spec: &spec.Vault{
+				Login: &spec.VaultLogin{
+					Token: "root",
+				},
+			},
+			expectedAddress: "https://127.0.0.1:8200",
+		},
+	} {
+		vault, _ := NewVault(testcase.spec, "test")
+		assert.Equal(t, testcase.expectedAddress, vault.(*realVault).client.Address())
+	}
+}

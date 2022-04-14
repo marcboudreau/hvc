@@ -13,7 +13,9 @@ specify a `target` section.
 ## `target.address`
 
 Use `target.address` to specify the scheme, host, and port address of the target
-Vault server.
+Vault server. If this key is not provided the Vault client will be configured
+using the **VAULT_ADDR** environment variable if it's set, otherwise it will
+default to `https://127.0.0.1:8200` as the Vault address.
 
 ## `target.login`
 
@@ -62,7 +64,7 @@ perform a login operation and obtain a valid Vault token.
       "kubernetes": {
         "mount-point": "kubernetes",
         "role": "my-role",
-        "jwt-path": "/var/run/secrets/kubernetes.io/serviceaccount"
+        "jwt-path": "/var/run/secrets/kubernetes.io/serviceaccount/token"
       }
     }
   },
@@ -73,7 +75,8 @@ perform a login operation and obtain a valid Vault token.
 ## `target.login.kubernetes.mount-point`
 
 Use `target.login.kubernetes.mount-point` to specify the path where the
-Kubernetes authentication method that will be used is mounted.
+Kubernetes authentication method that will be used is mounted. If this key is
+not provided, the *mount-point* is assumed to be `kubernetes`.
 
 ## `target.login.kubernetes.role`
 
@@ -83,7 +86,9 @@ Kubernetes authentication method to use for the login operation.
 ## `target.login.kubernetes.jwt-path`
 
 Use `target.login.kubernetes.jwt-path` to specify the path on the local file
-system from which the Kubernetes Service Account token is to be retrieved.
+system from which the Kubernetes Service Account token is to be retrieved.  If
+this key is not provided, the *jwt-path* is assumed to be
+`/var/run/secrets/kubernetes.io/serviceaccount/token`.
 
 ## `sources`
 
@@ -116,7 +121,8 @@ source Vault.
 ## `copies[*].mount-point`
 
 Use the `copies[*].mount-point` key to specify the path where the KV Secrets
-Engine of the target secret is mounted.
+Engine of the target secret is mounted. If this key is not provided, the
+*mount-point* is assumed to be `kv`.
 
 ## `copies[*].path`
 
@@ -171,15 +177,20 @@ the appropriate source Vault in the `sources` section above.
 ## `copies[*].values.<value_name>.mount-point`
 
 Use the `copies[*].values.<value_name>.mount-point` key to specify the path
-where the KV Secrets Engine of the tarsourceget secret is mounted.
+where the KV Secrets Engine of the tarsourceget secret is mounted. If this key
+is not provided, the *mount-point* is assumed to be `kv`.
 
 ## `copies[*].values.<value_name>.path`
 
 Use the `copies[*].values.<value_name>.path` key to specify the path of the
-source secret within its KV Secrets Engine.
+source secret within its KV Secrets Engine. If this key is not provided, the
+source *path* is assumed to be the same as the target *path* specified in the
+`copies[*].path` key.
 
 ## `copies[*].values.<value_name>.key`
 
 Use the `copies[*].values.<value_name>.key` key to specify the key of the
 key-value mapping within the source secret to copy into the `<value_name>`
-mapping in the target secret.
+mapping in the target secret. If this key is not provided, the source *key* is
+assumed to be the same as the target key specified in the 
+`copies[*].values.<value_name>` key.

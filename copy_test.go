@@ -85,6 +85,95 @@ func TestNewCopySetsVaultSource(t *testing.T) {
 	assert.Equal(t, fakeVault.Name(), copy.Values["t1"].Source.Name())
 }
 
+func TestNewCopyHandlesDefaultValues(t *testing.T) {
+	for _, testcase := range []struct {
+		spec                     *spec.Copy
+		expectedMountPoint       string
+		expectedValuesMountPoint string
+		expectedValuesPath       string
+		expectedValuesKey        string
+	}{
+		// mount-point omitted
+		{
+			spec: &spec.Copy{
+				Path: "path1",
+				Values: map[string]*spec.CopyValue{
+					"k": {
+						Source:     "s1",
+						MountPoint: "vkv",
+						Path:       "vpath1",
+						Key:        "vk1",
+					},
+				},
+			},
+			expectedMountPoint:       "kv",
+			expectedValuesMountPoint: "vkv",
+			expectedValuesPath:       "vpath1",
+			expectedValuesKey:        "vk1",
+		},
+		// values mount-point omitted
+		{
+			spec: &spec.Copy{
+				MountPoint: "kv1",
+				Path:       "path1",
+				Values: map[string]*spec.CopyValue{
+					"k": {
+						Source: "s1",
+						Path:   "vpath1",
+						Key:    "vk1",
+					},
+				},
+			},
+			expectedMountPoint:       "kv1",
+			expectedValuesMountPoint: "kv",
+			expectedValuesPath:       "vpath1",
+			expectedValuesKey:        "vk1",
+		},
+		// values path omitted
+		{
+			spec: &spec.Copy{
+				MountPoint: "kv1",
+				Path:       "path1",
+				Values: map[string]*spec.CopyValue{
+					"k": {
+						Source:     "s1",
+						MountPoint: "vkv1",
+						Key:        "vk1",
+					},
+				},
+			},
+			expectedMountPoint:       "kv1",
+			expectedValuesMountPoint: "vkv1",
+			expectedValuesPath:       "path1",
+			expectedValuesKey:        "vk1",
+		},
+		// values key omitted
+		{
+			spec: &spec.Copy{
+				MountPoint: "kv1",
+				Path:       "path1",
+				Values: map[string]*spec.CopyValue{
+					"k": {
+						Source:     "s1",
+						MountPoint: "vkv1",
+						Path:       "vpath1",
+					},
+				},
+			},
+			expectedMountPoint:       "kv1",
+			expectedValuesMountPoint: "vkv1",
+			expectedValuesPath:       "vpath1",
+			expectedValuesKey:        "k",
+		},
+	} {
+		copy, _ := NewCopy(testcase.spec, map[string]Vault{"s1": &FakeVault{}})
+		assert.Equal(t, testcase.expectedMountPoint, copy.MountPoint)
+		assert.Equal(t, testcase.expectedValuesMountPoint, copy.Values["k"].MountPoint)
+		assert.Equal(t, testcase.expectedValuesPath, copy.Values["k"].Path)
+		assert.Equal(t, testcase.expectedValuesKey, copy.Values["k"].Key)
+	}
+}
+
 func TestTargetUpdateTime(t *testing.T) {
 	for _, testcase := range []struct {
 		copy         *Copy

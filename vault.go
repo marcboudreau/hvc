@@ -36,16 +36,28 @@ func NewVault(spec *spec.Vault, name string) (Vault, error) {
 		return nil, err
 	}
 
-	vaultClient.SetAddress(spec.Address)
+	if spec.Address != "" {
+		vaultClient.SetAddress(spec.Address)
+	}
 
 	if spec.Login != nil {
 		if spec.Login.Token != "" {
 			vaultClient.SetToken(spec.Login.Token)
 		} else if spec.Login.Kubernetes != nil {
+			kubernetesMountPoint := "kubernetes"
+			if spec.Login.Kubernetes.MountPoint != "" {
+				kubernetesMountPoint = spec.Login.Kubernetes.MountPoint
+			}
+
+			jwtPath := "/var/run/secrets/kubernetes.io/serviceaccount/token"
+			if spec.Login.Kubernetes.JWTPath != "" {
+				jwtPath = spec.Login.Kubernetes.JWTPath
+			}
+
 			auth, err := k8sauth.NewKubernetesAuth(
 				spec.Login.Kubernetes.Role,
-				k8sauth.WithServiceAccountTokenPath(spec.Login.Kubernetes.JWTPath),
-				k8sauth.WithMountPath(spec.Login.Kubernetes.MountPoint),
+				k8sauth.WithServiceAccountTokenPath(jwtPath),
+				k8sauth.WithMountPath(kubernetesMountPoint),
 			)
 			if err != nil {
 				return nil, fmt.Errorf("failed to initialize Kubernetes authentication method: %w", err)
