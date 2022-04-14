@@ -30,16 +30,36 @@ func NewCopy(spec *spec.Copy, sources map[string]Vault) (*Copy, error) {
 			return nil, fmt.Errorf("secret value %q is referencing a non-existing source Vault", k)
 		}
 
+		mountPoint := "kv"
+		if v.MountPoint != "" {
+			mountPoint = v.MountPoint
+		}
+
+		path := spec.Path
+		if v.Path != "" {
+			path = v.Path
+		}
+
+		key := k
+		if v.Key != "" {
+			key = v.Key
+		}
+
 		copyValues[k] = &CopyValue{
 			Source:     sourceVault,
-			MountPoint: v.MountPoint,
-			Path:       v.Path,
-			Key:        v.Key,
+			MountPoint: mountPoint,
+			Path:       path,
+			Key:        key,
 		}
 	}
 
+	mountPoint := "kv"
+	if spec.MountPoint != "" {
+		mountPoint = spec.MountPoint
+	}
+
 	return &Copy{
-		MountPoint: spec.MountPoint,
+		MountPoint: mountPoint,
 		Path:       spec.Path,
 		Values:     copyValues,
 	}, nil
