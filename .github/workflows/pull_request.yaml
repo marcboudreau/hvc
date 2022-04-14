@@ -1,0 +1,26 @@
+name: Continuous Integration
+on:
+  pull_request:
+    branches:
+    - main
+jobs:
+  ci:
+    name: Continuous Integration
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - id: go
+      name: Setup Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.17
+    - id: test
+      name: Go Tests
+      run: |
+        go test -coverprofile=coverage.out ./...
+    - id: compile
+      name: Compile
+      run: |
+        GOOS=darwin GOARCH=amd64 go build -o hvc-${GOOS}_${GOARCH} ./cmd/hvc/main.go
+        GOOS=linux GOARCH=amd64 go build -o hvc-${GOOS}_${GOARCH} ./cmd/hvc/main.go
+        GOOS=windows GOARCH=amd64 go build -o hvc-${GOOS}_${GOARCH} ./cmd/hvc/main.go
