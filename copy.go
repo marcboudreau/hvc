@@ -131,21 +131,27 @@ func (p *Copy) Name() string {
 	return fmt.Sprintf("%s/%s", p.MountPoint, p.Path)
 }
 
-func (p *Copy) Execute(target Vault) error {
+func (p *Copy) Execute(target Vault, index int, ch chan error) {
 	// Get the metadata of the secret in the target Vault server
 	targetTime, err := p.TargetUpdateTime(target)
 	if err != nil {
-		return err
+		ch <- fmt.Errorf("failed to execute copy %d: %w", index, err)
+		return
 	}
 
 	needsUpdate, err := p.DetermineNeedToCopy(targetTime)
 	if err != nil {
-		return err
+		ch <- fmt.Errorf("failed to execute copy %d: %w", index, err)
+		return
 	}
 
 	if needsUpdate {
-		return p.UpdateTargetSecret(target)
+		err = p.UpdateTargetSecret(target)
+		if err != nil {
+			ch <- fmt.Errorf("failed to execute copy %d: %w", index, err)
+			return
+		}
 	}
 
-	return nil
+	ch <- nil
 }

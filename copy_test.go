@@ -276,7 +276,9 @@ func TestUpdateTargetSecret(t *testing.T) {
 								{
 									secret: &vault.Secret{
 										Data: map[string]interface{}{
-											"k1": "ThePassword",
+											"data": map[string]interface{}{
+												"k1": "ThePassword",
+											},
 										},
 									},
 									err: nil,
@@ -334,7 +336,9 @@ func TestUpdateTargetSecret(t *testing.T) {
 							readResponses: []FakeVaultResponse{
 								{
 									secret: &vault.Secret{
-										Data: map[string]interface{}{},
+										Data: map[string]interface{}{
+											"data": map[string]interface{}{},
+										},
 									},
 									err: nil,
 								},
@@ -361,7 +365,9 @@ func TestUpdateTargetSecret(t *testing.T) {
 								{
 									secret: &vault.Secret{
 										Data: map[string]interface{}{
-											"k1": "value",
+											"data": map[string]interface{}{
+												"k1": "value",
+											},
 										},
 									},
 								},

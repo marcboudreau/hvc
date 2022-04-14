@@ -33,9 +33,9 @@ var CopyCmd = &cobra.Command{
 			fmt.Fprintf(os.Stderr, "failed to resolve copy job specification: %s", err.Error())
 		}
 
-		err = copyJob.Execute()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "failed to copy secrets: %s", err.Error())
+		errorSlice := copyJob.Execute()
+		if errorSlice != nil {
+			fmt.Fprintf(os.Stderr, "failed to copy secrets: %s", errorSlice)
 		}
 	},
 }
