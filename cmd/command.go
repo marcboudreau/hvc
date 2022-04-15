@@ -15,6 +15,7 @@ func init() {
 	rootCmd.AddCommand(copy.CopyCmd)
 }
 
+// Execute executes the rootCmd's Run function.
 func Execute() {
 	rootCmd.Execute()
 }

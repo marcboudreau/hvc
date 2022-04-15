@@ -9,6 +9,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// CopyCmd is the cobra.Command that handles the copy option of this
+// application.
 var CopyCmd = &cobra.Command{
 	Use:   "copy",
 	Short: "Copies secrets according to copy job specification",

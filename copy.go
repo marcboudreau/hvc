@@ -22,6 +22,8 @@ type Copy struct {
 	Values map[string]*CopyValue
 }
 
+// NewCopy creates a Copy structure using the provided spec.Copy structure and
+// map of source names to Vault interfaces.
 func NewCopy(spec *spec.Copy, sources map[string]Vault) (*Copy, error) {
 	copyValues := make(map[string]*CopyValue)
 	for k, v := range spec.Values {
@@ -90,6 +92,11 @@ func (p *Copy) TargetUpdateTime(target Vault) (time.Time, error) {
 	return targetTime, nil
 }
 
+// DetermineNeedToCopy retrieves the metadata for every source secret referenced
+// by a Copy structure and compares the updated time from each with the provided
+// target time. If any source updated time is more recent than the target time,
+// the function will return true, otherwise it will return false. If an error is
+// encountered, false and the error will be returned.
 func (p *Copy) DetermineNeedToCopy(targetTime time.Time) (bool, error) {
 	// Update time cache
 	sourceUpdateTimes := make(map[string]time.Time)
@@ -117,6 +124,8 @@ func (p *Copy) DetermineNeedToCopy(targetTime time.Time) (bool, error) {
 	return needsUpdate, nil
 }
 
+// UpdateTargetSecret updates the target secret referenced in the receiver using
+// the provided target Vault interface.
 func (p *Copy) UpdateTargetSecret(target Vault) error {
 	targetData := make(map[string]interface{})
 
@@ -147,10 +156,14 @@ func (p *Copy) UpdateTargetSecret(target Vault) error {
 	return nil
 }
 
+// Name returns a canonical name for the receiver.
 func (p *Copy) Name() string {
 	return fmt.Sprintf("%s/%s", p.MountPoint, p.Path)
 }
 
+// Execute executes the copy operation of the receiver using the provided target
+// Vault interface. The function uses the provided index and channel to report
+// any errors encountered.
 func (p *Copy) Execute(target Vault, index int, ch chan error) {
 	// Get the metadata of the secret in the target Vault server
 	targetTime, err := p.TargetUpdateTime(target)
