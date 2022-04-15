@@ -26,6 +26,8 @@ type CopyJob struct {
 	Copies []*Copy `json:"copies"`
 }
 
+// LoadSpec creates a CopyJob structure from the data read from the provided
+// Reader interface.
 func LoadSpec(in io.Reader) (*CopyJob, error) {
 	specBytes, err := ioutil.ReadAll(in)
 	if err != nil {

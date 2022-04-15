@@ -1,6 +1,6 @@
 package spec
 
-// CopyValueSpec defines the source for a value within the target secret.
+// CopyValue defines the source for a value within the target secret.
 type CopyValue struct {
 	// Source is the name of the defined Vault structure in the Sources field of
 	// the CopyJob structure.

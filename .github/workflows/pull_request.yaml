@@ -18,9 +18,9 @@ jobs:
       name: Go Tests
       run: |
         go test -coverprofile=coverage.out ./...
-    - id: compile
-      name: Compile
-      run: |
-        GOOS=darwin GOARCH=amd64 go build -o hvc-${GOOS}_${GOARCH} ./cmd/hvc/main.go
-        GOOS=linux GOARCH=amd64 go build -o hvc-${GOOS}_${GOARCH} ./cmd/hvc/main.go
-        GOOS=windows GOARCH=amd64 go build -o hvc-${GOOS}_${GOARCH} ./cmd/hvc/main.go
+    - id: lint
+      name: Go Lint
+      uses: Jerome1337/golint-action@v1.0.2
+      with:
+        golint-path: './...'
+        

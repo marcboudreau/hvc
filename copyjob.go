@@ -24,11 +24,12 @@ type CopyJob struct {
 func NewCopyJob(spec *spec.CopyJob) (*CopyJob, error) {
 	copyJob := &CopyJob{}
 
-	if targetVault, err := NewVault(spec.Target, "_target"); err != nil {
+	targetVault, err := NewVault(spec.Target, "_target")
+	if err != nil {
 		return nil, fmt.Errorf("failed to initialize target Vault: %w", err)
-	} else {
-		copyJob.Target = targetVault
 	}
+
+	copyJob.Target = targetVault
 
 	sourceVaults := make(map[string]Vault)
 	for sourceVaultKey, sourceVaultSpec := range spec.Sources {
@@ -53,7 +54,7 @@ func NewCopyJob(spec *spec.CopyJob) (*CopyJob, error) {
 	return copyJob, nil
 }
 
-// ExecuteCopy copies the secret values referenced in the provided Copy
+// Execute copies the secret values referenced in the provided Copy
 // structure using the receiver's configured target and source Vault
 // connections.
 func (p *CopyJob) Execute() []error {
