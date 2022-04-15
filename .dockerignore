@@ -1,0 +1,9 @@
+.github/
+.vscode/
+testing/
+*_test.go
+coverage.out
+Dockerfile
+hvc
+README.md
+SPECIFICATION.md
