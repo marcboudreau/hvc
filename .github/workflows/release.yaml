@@ -1,0 +1,52 @@
+name: Release
+on:
+  push:
+    branches:
+      - main
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - id: go
+      name: Setup Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.17
+    - id: test
+      name: Go Tests
+      run: |
+        go test -coverprofile=coverage.out ./...
+    - id: version
+      uses: paulhatch/semantic-version@v4.0.3
+    - id: docker-build
+      name: Build Docker Image
+      run: |
+        docker build \
+            -t marcboudreau/hvc:${{ steps.version.outputs.version }} \
+            -t marcboudreau/hvc:${{ steps.version.outputs.major }} \
+            -t marcboudreau/hvc:latest \
+            .
+    - id: docker-login
+      name: Docker Hub Login
+      env:
+        PASSWORD: ${{ secrets.DOCKERHUBPASSWORD }}
+      run: |
+        echo "$PASSWORD" | docker login \
+            -u marcboudreau \
+            --password-stdin \
+            docker.io
+    - id: docker-push
+      name: Docker Push
+      run: |
+        docker push -a marcboudreau/hvc
+    - id: tag
+      name: Tag Repository
+      run: |
+        git tag v${{ steps.version.outputs.version }}
+        git push --tags
