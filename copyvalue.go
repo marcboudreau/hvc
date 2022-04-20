@@ -115,6 +115,8 @@ func (p *CopySourceValues) DetermineUpdatedTime() (time.Time, error) {
 	return maxUpdateTime, nil
 }
 
+// RetrieveSourceValues queries the single source secret and returns a map of
+// its key-values that can be used to update the target secret.
 func (p *CopySourceSecret) RetrieveSourceValues() (map[string]interface{}, error) {
 	secret, err := p.secret.Source.Read(fmt.Sprintf("%s/data/%s", p.secret.MountPoint, p.secret.Path))
 	if err != nil {
@@ -128,6 +130,9 @@ func (p *CopySourceSecret) RetrieveSourceValues() (map[string]interface{}, error
 	return secret.Data["data"].(map[string]interface{}), nil
 }
 
+// RetrieveSourceValues queries each source secret mapped in the values map of
+// the receiver and retrieves the specified source secret value and returns a
+// map of keys to values that can be used to update the target secret.
 func (p *CopySourceValues) RetrieveSourceValues() (map[string]interface{}, error) {
 	secretValues := make(map[string]interface{})
 
