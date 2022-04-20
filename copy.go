@@ -1,6 +1,7 @@
 package hvc
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -17,54 +18,95 @@ type Copy struct {
 	// Path is the path of the target secret within the KV secrets engine.
 	Path string
 
-	// Values is a map of target secret key names to CopyValue objects that define
-	// which source secret value to copy.
-	Values map[string]*CopyValue
+	// SourceSecret is the CopySource, which defines what source secret values
+	// are used to update the target secret.
+	SourceSecret CopySource
 }
 
 // NewCopy creates a Copy structure using the provided spec.Copy structure and
 // map of source names to Vault interfaces.
 func NewCopy(spec *spec.Copy, sources map[string]Vault) (*Copy, error) {
-	copyValues := make(map[string]*CopyValue)
-	for k, v := range spec.Values {
-		sourceVault := sources[v.Source]
-		if sourceVault == nil {
-			return nil, fmt.Errorf("secret value %q is referencing a non-existing source Vault", k)
-		}
-
-		mountPoint := "kv"
-		if v.MountPoint != "" {
-			mountPoint = v.MountPoint
-		}
-
-		path := spec.Path
-		if v.Path != "" {
-			path = v.Path
-		}
-
-		key := k
-		if v.Key != "" {
-			key = v.Key
-		}
-
-		copyValues[k] = &CopyValue{
-			Source:     sourceVault,
-			MountPoint: mountPoint,
-			Path:       path,
-			Key:        key,
-		}
+	targetMountPoint := spec.MountPoint
+	if targetMountPoint == "" {
+		targetMountPoint = "kv"
 	}
 
-	mountPoint := "kv"
-	if spec.MountPoint != "" {
-		mountPoint = spec.MountPoint
+	// Make sure that Path is provided.
+	if spec.Path == "" {
+		return nil, errors.New("copy element must provide a target secret path")
 	}
 
-	return &Copy{
-		MountPoint: mountPoint,
+	copy := &Copy{
+		MountPoint: targetMountPoint,
 		Path:       spec.Path,
-		Values:     copyValues,
-	}, nil
+	}
+
+	if spec.Secret != nil {
+		// Make sure that if Secret is not nil, Values is empty.
+		if len(spec.Values) != 0 {
+			return nil, errors.New("copy element cannot contain both secret and values")
+		}
+
+		// Make sure the single Secret is referencing an existing Vault
+		vault, found := sources[spec.Secret.Source]
+		if !found {
+			return nil, fmt.Errorf("secret is referencing a non-existing source Vault %s", spec.Secret.Source)
+		}
+
+		sourceMountPoint := spec.Secret.MountPoint
+		if sourceMountPoint == "" {
+			sourceMountPoint = "kv"
+		}
+
+		sourcePath := spec.Secret.Path
+		if sourcePath == "" {
+			sourcePath = spec.Path
+		}
+
+		copy.SourceSecret = &CopySourceSecret{
+			secret: &CopyValue{
+				Source:     vault,
+				MountPoint: sourceMountPoint,
+				Path:       sourcePath,
+			},
+		}
+	} else {
+		copyValues := make(map[string]*CopyValue)
+		for k, v := range spec.Values {
+			sourceVault := sources[v.Source]
+			if sourceVault == nil {
+				return nil, fmt.Errorf("secret value for target secret key %s is referencing a non-existing source Vault %s", k, v.Source)
+			}
+
+			mountPoint := v.MountPoint
+			if v.MountPoint == "" {
+				mountPoint = "kv"
+			}
+
+			path := v.Path
+			if v.Path == "" {
+				path = spec.Path
+			}
+
+			key := v.Key
+			if v.Key == "" {
+				key = k
+			}
+
+			copyValues[k] = &CopyValue{
+				Source:     sourceVault,
+				MountPoint: mountPoint,
+				Path:       path,
+				Key:        key,
+			}
+		}
+
+		copy.SourceSecret = &CopySourceValues{
+			values: copyValues,
+		}
+	}
+
+	return copy, nil
 }
 
 // TargetUpdateTime retrieves the updated_time value from the target secret's
@@ -98,57 +140,23 @@ func (p *Copy) TargetUpdateTime(target Vault) (time.Time, error) {
 // the function will return true, otherwise it will return false. If an error is
 // encountered, false and the error will be returned.
 func (p *Copy) DetermineNeedToCopy(targetTime time.Time) (bool, error) {
-	// Update time cache
-	sourceUpdateTimes := make(map[string]time.Time)
-
-	needsUpdate := false
-
-	// Get the metadta of every secret source value
-	for _, value := range p.Values {
-		// Check if this value's secret has already been examined.
-		if _, found := sourceUpdateTimes[value.Name()]; !found {
-			secret, err := value.Source.Read(fmt.Sprintf("%s/metadata/%s", value.MountPoint, value.Path))
-			if err != nil {
-				return false, fmt.Errorf("failed to retrieve source secret %q metadata: %w", value.Name(), err)
-			}
-
-			sourceTime, _ := time.Parse(time.RFC3339Nano, secret.Data["updated_time"].(string))
-			if sourceTime.After(targetTime) {
-				needsUpdate = true
-			}
-
-			sourceUpdateTimes[value.Name()] = sourceTime
-		}
+	sourceTime, err := p.SourceSecret.DetermineUpdatedTime()
+	if err != nil {
+		return false, err
 	}
 
-	return needsUpdate, nil
+	return targetTime.Before(sourceTime), nil
 }
 
 // UpdateTargetSecret updates the target secret referenced in the receiver using
 // the provided target Vault interface.
 func (p *Copy) UpdateTargetSecret(target Vault) error {
-	targetData := make(map[string]interface{})
-
-	for targetKey, value := range p.Values {
-		secret, err := value.Source.Read(fmt.Sprintf("%s/data/%s", value.MountPoint, value.Path))
-		if err != nil {
-			return fmt.Errorf("failed to retrieve source secret %q data: %w", value.Name(), err)
-		}
-
-		secretData, found := secret.Data["data"].(map[string]interface{})
-		if !found {
-			return fmt.Errorf("source secret %q does not contain a data key", value.Name())
-		}
-
-		sourceValue, found := secretData[value.Key]
-		if !found {
-			return fmt.Errorf("key %s does not exist in source secret %q", value.Key, value.Name())
-		}
-
-		targetData[targetKey] = sourceValue
+	targetData, err := p.SourceSecret.RetrieveSourceValues()
+	if err != nil {
+		return err
 	}
 
-	_, err := target.Write(fmt.Sprintf("%s/data/%s", p.MountPoint, p.Path), map[string]interface{}{"data": targetData})
+	_, err = target.Write(fmt.Sprintf("%s/data/%s", p.MountPoint, p.Path), map[string]interface{}{"data": targetData})
 	if err != nil {
 		return fmt.Errorf("failed to update target secret %q: %w", p.Name(), err)
 	}

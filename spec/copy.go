@@ -12,6 +12,11 @@ type Copy struct {
 	Path string `json:"path"`
 
 	// Values is a map of secret keys to CopyValue structures, which define the
-	// source of the secret value.
+	// source of the secret value. Only one of Values and Secret can be used for
+	// any Copy instance.
 	Values map[string]*CopyValue `json:"values"`
+
+	// Secret is a structure which defines an entire source secret to copy (all of
+	// its keys). Only one of Values and Secret can be used for any Copy instance.
+	Secret *CopyValue `json:"secret"`
 }

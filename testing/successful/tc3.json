@@ -1,0 +1,27 @@
+{
+  "target": {
+    "address": "http://localhost:8200",
+    "login": {
+      "token": "${TARGET_VAULT_TOKEN}"
+    }
+  },
+  "sources":{
+    "s1": {
+      "address": "http://localhost:8300",
+      "login": {
+        "token": "${SOURCE_VAULT_TOKEN_1}"
+      }
+    }
+  },
+  "copies": [
+    {
+      "mount-point": "kv",
+      "path": "tc1/secret1",
+      "secret": {
+        "source": "s1",
+        "mount-point": "kv1",
+        "path": "path1/secret1"
+      }
+    }
+  ]
+}

@@ -114,9 +114,11 @@ The specification consists of one or more copy operations.  Each are defined as
 an element of the `copies` array.
 
 An element of the `copies` array (or a Copy element), describes a single target
-secret and its constituent key-value mappings (the target secret's data).  Each
-key-value mappings can correspond to a different source secret even a different
-source Vault.
+secret and its constituent key-value mappings (the target secret's data) in one
+of two ways:
+1. By specifying a source secret with the `copies[*].secret` key (see below)
+1. By specifying a map of target secret keys to source secret values using the
+`copies[*].values` key (see below)
 
 ## `copies[*].mount-point`
 
@@ -129,10 +131,62 @@ Engine of the target secret is mounted. If this key is not provided, the
 Use the `copies[*].path` key to specify the path of the target secret within the
 KV Secrets Engine.
 
+## `copies[*].secret`
+
+The `copies[*].secret` key is used to define an exact copy of a source secret
+into a target secret.  All of the source secret's key-value pairs will be copied
+when this method is used. This key cannot be used in conjunction with the
+`copies[*].values` key.
+
+### Example: Copying a Source Secret Exactly
+
+This example uses the `copies[*].secret` key to copy a source secret exactly
+as-is to a target secret.
+
+```json
+{
+  ...
+  "copies": [
+    {
+      "mount-point": "kv",
+      "path": "jenkins/deployment",
+      "secret": {
+        "source": "source-vault",
+        "mount-point": "secret",
+        "path": "jenkins/deploy"
+      }
+    }
+  ]
+}
+```
+
+The example shows the contents of the `copies` key that will copy all of the
+contents of the source secret `secret/jenkins/deploy` from the source Vault
+server mapped to `source-vault` in the `sources` section (not shown in the
+example) to a secret `kv/jenkins/deployment` in the target Vault server.
+
+## `copies[*].secret.source`
+
+Use the `copies[*].secret.source` key to specify the name mapped to the
+appropriate source Vault defined in the `sources` map above.
+
+## `copies[*].secret.mount-point`
+
+Use the `copies[*].secret.mount-point` key to specify the path where the KV
+Secrets Engine of the source secret is mounted. If this key is not provided, the
+*mount-point* is assumed to be `kv`.
+
+## `copies[*].secret.path`
+
+Use the `copies[*].secret.path` key to specify the path of the source secret
+within the KV Secrets Engine. If this key is not provided, the source *path*
+is assumed to be the same as the target *path*.
+
 ## `copies[*].values`
 
 The `copies[*].values` key consists of a map of keys in the target secret to a
-source Vault Value section.
+source Vault Value section. This key cannot be used in conjunction with the
+`copies[*].secret` key.
 
 ### Example: Copying a Single Value into a Target Secret
 
@@ -172,7 +226,7 @@ Use the `copies[*].values.<value_name>` key to specify the source Vault Value se
 ## `copies[*].values.<value_name>.source`
 
 Use the `copies[*].values.<value_name>.source` key to specify the name mapped to
-the appropriate source Vault in the `sources` section above.
+the appropriate source Vault in the `sources` map above.
 
 ## `copies[*].values.<value_name>.mount-point`
 

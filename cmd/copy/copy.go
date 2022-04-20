@@ -36,7 +36,7 @@ var CopyCmd = &cobra.Command{
 		}
 
 		errorSlice := copyJob.Execute()
-		if errorSlice != nil {
+		if len(errorSlice) > 0 {
 			fmt.Fprintf(os.Stderr, "failed to copy secrets: %s", errorSlice)
 		}
 	},
