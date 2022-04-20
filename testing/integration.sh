@@ -73,18 +73,24 @@ export SOURCE_VAULT_TOKEN_2=$(curl -fs -H "X-Vault-Token: root" -d '{"policies":
 failed=0
 
 # Run specifications expected to succeed
+echo ""
 for f in successful/*.json ; do
   if ! go run ../cmd/hvc/main.go copy $f ; then
     echo "FAIL - Testcase $f"
     failed=$((failed+1))
+  else
+    echo "PASS - Testcase $f"
   fi
 done
+echo ""
 
 # Run specifications expected to encounter an error
 # for f in unsuccessful/*.json ; do
 #   if go run ../cmd/hvc/main.go copy $f ; then
 #     echo "FAIL - Testcase $f"
 #     failed=$((failed+1))
+#   else
+#     echo "PASS - Testcase $f"
 #   fi
 # done
 

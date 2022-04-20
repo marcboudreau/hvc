@@ -121,7 +121,7 @@ func TestCopyJobExecute(t *testing.T) {
 		copyJob          *CopyJob
 		errorSliceAssert func(assert.TestingT, interface{}, ...interface{}) bool
 	}{
-		// Happy path!
+		// Happy path with Values!
 		{
 			copyJob: &CopyJob{
 				Target: &FakeVault{
@@ -147,8 +147,73 @@ func TestCopyJobExecute(t *testing.T) {
 					{
 						MountPoint: "kv",
 						Path:       "p1",
-						Values: map[string]*CopyValue{
-							"t1": {
+						SourceSecret: &CopySourceValues{
+							values: map[string]*CopyValue{
+								"t1": {
+									Source: &FakeVault{
+										name: "s1",
+										readResponses: []FakeVaultResponse{
+											// metadata read
+											{
+												secret: &vault.Secret{
+													Data: map[string]interface{}{
+														"updated_time": "2022-01-01T00:00:00.000000000Z",
+													},
+												},
+												err: nil,
+											},
+											// data read
+											{
+												secret: &vault.Secret{
+													Data: map[string]interface{}{
+														"data": map[string]interface{}{
+															"k1": "value",
+														},
+													},
+												},
+												err: nil,
+											},
+										},
+									},
+									MountPoint: "kv",
+									Path:       "p1",
+									Key:        "k1",
+								},
+							},
+						},
+					},
+				},
+			},
+			errorSliceAssert: assert.Empty,
+		},
+		// Happy path with Secret!
+		{
+			copyJob: &CopyJob{
+				Target: &FakeVault{
+					name: "_target",
+					readResponses: []FakeVaultResponse{
+						{
+							secret: &vault.Secret{
+								Data: map[string]interface{}{
+									"updated_time": "2000-01-01T00:00:00.000000000Z",
+								},
+							},
+							err: nil,
+						},
+					},
+					writeResponses: []FakeVaultResponse{
+						{
+							secret: &vault.Secret{},
+							err:    nil,
+						},
+					},
+				},
+				Copies: []*Copy{
+					{
+						MountPoint: "kv",
+						Path:       "p1",
+						SourceSecret: &CopySourceSecret{
+							secret: &CopyValue{
 								Source: &FakeVault{
 									name: "s1",
 									readResponses: []FakeVaultResponse{
@@ -176,7 +241,6 @@ func TestCopyJobExecute(t *testing.T) {
 								},
 								MountPoint: "kv",
 								Path:       "p1",
-								Key:        "k1",
 							},
 						},
 					},
@@ -210,36 +274,38 @@ func TestCopyJobExecute(t *testing.T) {
 					{
 						MountPoint: "kv",
 						Path:       "p1",
-						Values: map[string]*CopyValue{
-							"t1": {
-								Source: &FakeVault{
-									name: "s1",
-									readResponses: []FakeVaultResponse{
-										// metadata read
-										{
-											secret: &vault.Secret{
-												Data: map[string]interface{}{
-													"updated_time": "2012-01-01T00:00:00.000000000Z",
-												},
-											},
-											err: nil,
-										},
-										// data read
-										{
-											secret: &vault.Secret{
-												Data: map[string]interface{}{
-													"data": map[string]interface{}{
-														"k1": "value",
+						SourceSecret: &CopySourceValues{
+							values: map[string]*CopyValue{
+								"t1": {
+									Source: &FakeVault{
+										name: "s1",
+										readResponses: []FakeVaultResponse{
+											// metadata read
+											{
+												secret: &vault.Secret{
+													Data: map[string]interface{}{
+														"updated_time": "2012-01-01T00:00:00.000000000Z",
 													},
 												},
+												err: nil,
 											},
-											err: nil,
+											// data read
+											{
+												secret: &vault.Secret{
+													Data: map[string]interface{}{
+														"data": map[string]interface{}{
+															"k1": "value",
+														},
+													},
+												},
+												err: nil,
+											},
 										},
 									},
+									MountPoint: "kv",
+									Path:       "p1",
+									Key:        "k1",
 								},
-								MountPoint: "kv",
-								Path:       "p1",
-								Key:        "k1",
 							},
 						},
 					},
@@ -247,7 +313,7 @@ func TestCopyJobExecute(t *testing.T) {
 			},
 			errorSliceAssert: assert.Empty,
 		},
-		// Error reading target updated_time
+		// Error reading target updated_time using Values
 		{
 			copyJob: &CopyJob{
 				Target: &FakeVault{
@@ -263,8 +329,41 @@ func TestCopyJobExecute(t *testing.T) {
 					{
 						MountPoint: "kv",
 						Path:       "p1",
-						Values: map[string]*CopyValue{
-							"t1": {
+						SourceSecret: &CopySourceValues{
+							values: map[string]*CopyValue{
+								"t1": {
+									Source: &FakeVault{
+										name: "s1",
+									},
+									MountPoint: "kv",
+									Path:       "p1",
+									Key:        "k1",
+								},
+							},
+						},
+					},
+				},
+			},
+			errorSliceAssert: assert.NotEmpty,
+		},
+		// Error reading target updated_time using Secret
+		{
+			copyJob: &CopyJob{
+				Target: &FakeVault{
+					name: "_target",
+					readResponses: []FakeVaultResponse{
+						{
+							secret: nil,
+							err:    errors.New("error"),
+						},
+					},
+				},
+				Copies: []*Copy{
+					{
+						MountPoint: "kv",
+						Path:       "p1",
+						SourceSecret: &CopySourceSecret{
+							secret: &CopyValue{
 								Source: &FakeVault{
 									name: "s1",
 								},
@@ -278,7 +377,7 @@ func TestCopyJobExecute(t *testing.T) {
 			},
 			errorSliceAssert: assert.NotEmpty,
 		},
-		// Error reading source updated_time
+		// Error reading source updated_time using Values
 		{
 			copyJob: &CopyJob{
 				Target: &FakeVault{
@@ -298,8 +397,52 @@ func TestCopyJobExecute(t *testing.T) {
 					{
 						MountPoint: "kv",
 						Path:       "p1",
-						Values: map[string]*CopyValue{
-							"t1": {
+						SourceSecret: &CopySourceValues{
+							values: map[string]*CopyValue{
+								"t1": {
+									Source: &FakeVault{
+										name: "s1",
+										readResponses: []FakeVaultResponse{
+											// metadata read
+											{
+												secret: nil,
+												err:    errors.New("error"),
+											},
+										},
+									},
+									MountPoint: "kv",
+									Path:       "p1",
+									Key:        "k1",
+								},
+							},
+						},
+					},
+				},
+			},
+			errorSliceAssert: assert.NotEmpty,
+		},
+		// Error reading source updated_time using Secret
+		{
+			copyJob: &CopyJob{
+				Target: &FakeVault{
+					name: "_target",
+					readResponses: []FakeVaultResponse{
+						{
+							secret: &vault.Secret{
+								Data: map[string]interface{}{
+									"updated_time": "2000-01-01T00:00:00.000000000Z",
+								},
+							},
+							err: nil,
+						},
+					},
+				},
+				Copies: []*Copy{
+					{
+						MountPoint: "kv",
+						Path:       "p1",
+						SourceSecret: &CopySourceSecret{
+							secret: &CopyValue{
 								Source: &FakeVault{
 									name: "s1",
 									readResponses: []FakeVaultResponse{
@@ -312,7 +455,6 @@ func TestCopyJobExecute(t *testing.T) {
 								},
 								MountPoint: "kv",
 								Path:       "p1",
-								Key:        "k1",
 							},
 						},
 					},
@@ -320,7 +462,7 @@ func TestCopyJobExecute(t *testing.T) {
 			},
 			errorSliceAssert: assert.NotEmpty,
 		},
-		// Error reading source value
+		// Error reading source value using Values
 		{
 			copyJob: &CopyJob{
 				Target: &FakeVault{
@@ -340,8 +482,61 @@ func TestCopyJobExecute(t *testing.T) {
 					{
 						MountPoint: "kv",
 						Path:       "p1",
-						Values: map[string]*CopyValue{
-							"t1": {
+						SourceSecret: &CopySourceValues{
+							values: map[string]*CopyValue{
+								"t1": {
+									Source: &FakeVault{
+										name: "s1",
+										readResponses: []FakeVaultResponse{
+											// metadata read
+											{
+												secret: &vault.Secret{
+													Data: map[string]interface{}{
+														"updated_time": "2022-01-01T00:00:00.000000000Z",
+													},
+												},
+												err: nil,
+											},
+											// data read
+											{
+												secret: nil,
+												err:    errors.New("error"),
+											},
+										},
+									},
+									MountPoint: "kv",
+									Path:       "p1",
+									Key:        "k1",
+								},
+							},
+						},
+					},
+				},
+			},
+			errorSliceAssert: assert.NotEmpty,
+		},
+		// Error reading source value using Secret
+		{
+			copyJob: &CopyJob{
+				Target: &FakeVault{
+					name: "_target",
+					readResponses: []FakeVaultResponse{
+						{
+							secret: &vault.Secret{
+								Data: map[string]interface{}{
+									"updated_time": "2000-01-01T00:00:00.000000000Z",
+								},
+							},
+							err: nil,
+						},
+					},
+				},
+				Copies: []*Copy{
+					{
+						MountPoint: "kv",
+						Path:       "p1",
+						SourceSecret: &CopySourceSecret{
+							secret: &CopyValue{
 								Source: &FakeVault{
 									name: "s1",
 									readResponses: []FakeVaultResponse{
@@ -363,7 +558,6 @@ func TestCopyJobExecute(t *testing.T) {
 								},
 								MountPoint: "kv",
 								Path:       "p1",
-								Key:        "k1",
 							},
 						},
 					},
@@ -397,8 +591,8 @@ func TestCopyJobExecute(t *testing.T) {
 					{
 						MountPoint: "kv",
 						Path:       "p1",
-						Values: map[string]*CopyValue{
-							"t1": {
+						SourceSecret: &CopySourceSecret{
+							secret: &CopyValue{
 								Source: &FakeVault{
 									name: "s1",
 									readResponses: []FakeVaultResponse{
@@ -426,7 +620,6 @@ func TestCopyJobExecute(t *testing.T) {
 								},
 								MountPoint: "kv",
 								Path:       "p1",
-								Key:        "k1",
 							},
 						},
 					},
