@@ -3,4 +3,5 @@
 coverage.out
 hvc
 !cmd/hvc
-testing/terraform.tfstate*
+.terraform/
+terraform.tfstate*
