@@ -14,30 +14,31 @@ import (
 var CopyCmd = &cobra.Command{
 	Use:   "copy",
 	Short: "Copies secrets according to copy job specification",
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
-			fmt.Fprintln(os.Stderr, "missing copy job specification filename")
-			os.Exit(1)
+			return fmt.Errorf("missing copy job specification filename")
 		}
 
 		file, err := os.Open(args[0])
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "failed to open copy job specification file: %s", err.Error())
+			return fmt.Errorf("failed to open copy job specification file %s: %w", args[0], err)
 		}
 
 		copyJobSpec, err := spec.LoadSpec(file)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "failed to load copy job specification file: %s", err.Error())
+			return fmt.Errorf("failed to load copy job specification file %s: %w", file.Name(), err)
 		}
 
 		copyJob, err := hvc.NewCopyJob(copyJobSpec)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "failed to resolve copy job specification: %s", err.Error())
+			return fmt.Errorf("failed to resolve copy job specification: %w", err)
 		}
 
 		errorSlice := copyJob.Execute()
 		if len(errorSlice) > 0 {
-			fmt.Fprintf(os.Stderr, "failed to copy secrets: %s", errorSlice)
+			return fmt.Errorf("failed to copy secrets: %s", errorSlice)
 		}
+
+		return nil
 	},
 }
