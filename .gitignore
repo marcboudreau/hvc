@@ -3,5 +3,5 @@
 coverage.out
 hvc
 !cmd/hvc
-.terraform/
+**/.terraform/
 terraform.tfstate*

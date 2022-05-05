@@ -1,6 +1,6 @@
 .github/
 .vscode/
-testing/
+tests/
 *_test.go
 coverage.out
 Dockerfile

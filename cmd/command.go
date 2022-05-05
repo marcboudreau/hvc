@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"os"
+
 	"github.com/marcboudreau/hvc/cmd/copy"
 	"github.com/spf13/cobra"
 )
@@ -17,5 +19,8 @@ func init() {
 
 // Execute executes the rootCmd's Run function.
 func Execute() {
-	rootCmd.Execute()
+	err := rootCmd.Execute()
+	if err != nil {
+		os.Exit(1)
+	}
 }

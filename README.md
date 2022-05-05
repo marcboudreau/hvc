@@ -136,17 +136,33 @@ against the *main* branch. This workflow runs a lint checker and the unit tests.
 
 #### Integration Testing
 
-The also exists an integration test suite in the *testing/* directory that
-allows testing use cases with real Vault servers. The test suite launches a
-target Vault server that listens at the address `http://localhost:8200` and a
-source Vault server that listens at the address `http://localhost:8300`.
+The also exists an integration test suite in the *tests/* directory that
+allows testing use cases with real Vault servers within a Kubernetes cluster.
+The test suite launches a target Vault server and a source Vault server in the
+provided Kubernetes cluster. It then creates Kubernetes Job resources to run
+**hvc** for each test case.
 
-The test suite then uses a Terraform project to configure resources in each
-Vault server. It uses the *testing/target.tf* file to configure resources in the
-target Vault server and the *testing/source.tf* file to configure resources in
-the source Vault server.
+The test suite then uses two Terraform projects: one create the Kubernetes
+resources (in the *tests/setup/* directory) and another to configure resources
+in each Vault server (in the *tests/configure/* directory).
 
-Once both Vault servers are configured, the test suite iterates over each Copy
-Job Specification file found in the *testing/successul/* directory and executes
-the **copy** command with each file and marks the test case as passed if the
-application exits with a success status (exit code `0`) or failed otherwise.
+The Terraform projects are applied and later on destroyed by a Go test function.
+Once the Go test has applied all of the Terraform configuration, it then uses
+the Kubernetes Go client to create the Kubernetes Job and waits for them to
+complete. Once the job completes successfully, the test makes API calls directly
+to the target Vault server to verify that test case's secrets were correctly
+copied.
+
+This integration test is normally skipped unless an environment variable named
+**TEST_INTEGRATION** is set to an non-empty value.  So to run only the
+integration test:
+```
+$ cd tests/
+$ TEST_INTEGRATION=1 go test ./
+```
+
+To run this integration test in conjunction with the unit tests, simply run this
+command from the root directory of this repository:
+```
+$ TEST_INTEGRATION=1 go test ./...
+```
