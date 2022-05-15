@@ -3,18 +3,32 @@
 
 <img align="left" alt="Vault Copying" src="./copy.png" width="67" height="80" style="margin:5px"/>
 
-This project builds the **hvc** application that facilitates copying secrets
-from one or more Vault server(s) to a single target Vault server.
+The **hvc** application copies secrets from one or more source Vault servers to
+a single target Vault server.
 
-It features the ability to copy secrets to a Vault server using source secrets
-from one or more source Vault servers.
-
+Each copied secret can be sourced from a single secret (exact copy) or it can be
+sourced using multiple keys from different secrets.  The source secrets can also
+span different source Vault servers.
 
 ## Usage
 
-This section explains how to use this application.  The application uses a
-**Copy Job Specification** file to model which secrets are copied to a target
+This section explains how to use the **hvc** application.  The application uses
+a **Copy Job Specification** file to model which secrets are copied to a target
 Vault.
+
+### Running
+
+The **hhvc** application can be run in a Docker container as follows:
+
+```
+$ docker run -t -v $PWD/spec.json:/hvc/spec.json marcboudreau/hvc /hvc/spec.json
+```
+
+In this example, the *spec.json* file situated in the current working directory
+is mounted into the container and used as the Copy Job Specification.
+
+The **hvc** application can be run as a Kubernetes Job as demonstrated in the
+[kubernetes_example.md](./kubernetes_example.md) file.
 
 ### Copy Job Specification
 
