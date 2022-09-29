@@ -18,10 +18,10 @@ Vault.
 
 ### Running
 
-The **hhvc** application can be run in a Docker container as follows:
+The **hvc** application can be run in a Docker container as follows:
 
 ```
-$ docker run -t -v $PWD/spec.json:/hvc/spec.json marcboudreau/hvc /hvc/spec.json
+$ docker run -t -v $PWD/spec.json:/hvc/spec.json ghcr.io/marcboudreau/hvc /hvc/spec.json
 ```
 
 In this example, the *spec.json* file situated in the current working directory
