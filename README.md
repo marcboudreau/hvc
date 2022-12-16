@@ -136,7 +136,7 @@ against the *main* branch. This workflow runs a lint checker and the unit tests.
 
 #### Integration Testing
 
-The also exists an integration test suite in the *testing/* directory that
+There also exists an integration test suite in the *testing/* directory that
 allows testing use cases with real Vault servers. The test suite launches a
 target Vault server that listens at the address `http://localhost:8200` and a
 source Vault server that listens at the address `http://localhost:8300`.
@@ -150,3 +150,11 @@ Once both Vault servers are configured, the test suite iterates over each Copy
 Job Specification file found in the *testing/successul/* directory and executes
 the **copy** command with each file and marks the test case as passed if the
 application exits with a success status (exit code `0`) or failed otherwise.
+
+#### *New Integration Testing Framework*
+
+A new Integration Testing framework is being introduced in the *tests/*
+directory. This framework uses golang tests to drive the setup, execution, and
+verifications of the tests. This test framework requires access to a Kubernetes
+cluster by using the **docker-desktop** Context within the *~/.kube/config*
+file.
